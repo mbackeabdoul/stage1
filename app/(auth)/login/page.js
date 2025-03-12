@@ -6,48 +6,104 @@ import { useRouter, useSearchParams } from "next/navigation"
 import styled from "styled-components"
 import axios from "axios"
 
+const PageContainer = styled.div`
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background-color: white;
+`
+
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
+  gap: 20px;
+  width: 100%;
+`
+
+const InputGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+const Label = styled.label`
+  font-weight: 500;
+  color: #333;
+  font-size: 15px;
 `
 
 const Input = styled.input`
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.2s ease-in-out;
+  
+  &:focus {
+    outline: none;
+    border-color: #0070f3;
+    box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.1);
+  }
+`
+
+const PasswordContainer = styled.div`
+  position: relative;
+  width: 100%;
+`
+
+const ToggleButton = styled.button`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #666;
 `
 
 const Button = styled.button`
-  padding: 12px;
-  background-color: #000;
+  padding: 14px;
+  background-color: #0070f3;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
 
   &:hover {
-    background-color: #333;
+    background-color: #0060df;
+  }
+  
+  &:disabled {
+    background-color: #9dc3f5;
+    cursor: not-allowed;
   }
 `
 
 const ErrorMessage = styled.p`
-  color: red;
-  margin-top: 10px;
+  color: #e53e3e;
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 500;
 `
 
 const Links = styled.div`
-  margin-top: 15px;
+  margin-top: 25px;
   text-align: center;
+  display: flex;
+  justify-content: space-between;
 
   a {
-    color: #000;
+    color: #0070f3;
     text-decoration: none;
-    margin: 0 10px;
-
+    font-size: 15px;
+    
     &:hover {
       text-decoration: underline;
     }
@@ -56,12 +112,22 @@ const Links = styled.div`
 
 const PageTitle = styled.h2`
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  color: #333;
+  font-size: 28px;
+  font-weight: 600;
+`
+
+const LoadingIndicator = styled.div`
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+  color: #666;
 `
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="container mx-auto py-10">Chargement...</div>}>
+    <Suspense fallback={<LoadingIndicator>Chargement...</LoadingIndicator>}>
       <LoginContent />
     </Suspense>
   )
@@ -76,47 +142,50 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/accueil"
-  const [cartItems, setCartItems] = useState([])
-  const [subtotal, setSubtotal] = useState(0)
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   useEffect(() => {
     // Vérifier si l'utilisateur est déjà connecté
     const user = sessionStorage.getItem("user")
     if (user) {
-      router.push(callbackUrl)
+      try {
+        const userData = JSON.parse(user)
+        if (userData.email === "adminexemple@gmail.com") {
+          router.push("/admin")
+        } else {
+          router.push(callbackUrl)
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error)
+        router.push(callbackUrl)
+      }
     }
   }, [callbackUrl, router])
-
-  useEffect(() => {
-    // Check if user is logged in
-    const user = sessionStorage.getItem("user")
-    const token = sessionStorage.getItem("token")
-
-    if (!user || !token) {
-      router.push("/login?callbackUrl=/chariot")
-      return
-    }
-
-    // Load cart items from localStorage
-    try {
-      const cartData = localStorage.getItem("cartItems")
-      if (cartData) {
-        const parsedCart = JSON.parse(cartData)
-        if (Array.isArray(parsedCart) && parsedCart.length > 0) {
-          setCartItems(parsedCart)
-          calculateSubtotal(parsedCart)
-        }
-      }
-    } catch (error) {
-      console.error("Error loading cart data:", error)
-    }
-  }, [router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
+
+    // Vérifier si c'est l'admin
+    if (email === "admin@exemplegmail.com" && password === "admin123") {
+      // Créer un compte admin
+      const adminUser = {
+        email: "admin@exemplegmail.com",
+        name: "Administrator",
+        role: "admin",
+      }
+      
+      // Stocker les données admin dans sessionStorage
+      sessionStorage.setItem("token", "admin-token")
+      sessionStorage.setItem("user", JSON.stringify(adminUser))
+      
+      // Redirection vers la page admin
+      setTimeout(() => {
+        router.push("/admin")
+      }, 500)
+      
+      return
+    }
 
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", { email, password })
@@ -126,7 +195,7 @@ function LoginContent() {
       sessionStorage.setItem("user", JSON.stringify(response.data))
 
       // Rediriger vers la page demandée ou l'accueil
-      router.push(callbackUrl)
+      router.push("/accueil")
     } catch (err) {
       if (err.response) {
         setError(err.response.data.message || "Erreur lors de la connexion")
@@ -140,86 +209,60 @@ function LoginContent() {
     }
   }
 
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) return
-
-    const updatedCart = cartItems.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item))
-
-    setCartItems(updatedCart)
-    calculateSubtotal(updatedCart)
-
-    // Update localStorage
-    localStorage.setItem("cartItems", JSON.stringify(updatedCart))
-  }
-
-  const removeItem = (id) => {
-    const updatedCart = cartItems.filter((item) => item.id !== id)
-    setCartItems(updatedCart)
-    calculateSubtotal(updatedCart)
-
-    // Update localStorage
-    localStorage.setItem("cartItems", JSON.stringify(updatedCart))
-  }
-
-  const calculateSubtotal = (cart) => {
-    const newSubtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0)
-    setSubtotal(newSubtotal)
-  }
-
-  const handleContinue = () => {
-    if (!agreedToTerms) {
-      alert("Please agree to the Terms and Conditions")
-      return
-    }
-
-    if (cartItems.length === 0) {
-      alert("Votre panier est vide")
-      return
-    }
-
-    // Ensure cart is saved to localStorage before redirecting
-    localStorage.setItem("cartItems", JSON.stringify(cartItems))
-    router.push("/checkout")
-  }
-
   return (
-    <div className="container mx-auto py-10">
+    <PageContainer>
       <PageTitle>Connexion</PageTitle>
       <Form onSubmit={handleSubmit}>
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value)
-            setError(null)
-          }}
-          required
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <InputGroup>
+          <Label htmlFor="email">Adresse email</Label>
           <Input
-            type={showPassword ? "text" : "password"}
-            placeholder="Mot de passe"
-            value={password}
+            id="email"
+            type="email"
+            placeholder="Votre adresse email"
+            value={email}
             onChange={(e) => {
-              setPassword(e.target.value)
+              setEmail(e.target.value)
               setError(null)
             }}
             required
           />
-          <button type="button" onClick={() => setShowPassword(!showPassword)}>
-            {showPassword ? "👀" : "🔒"}
-          </button>
-        </div>
+        </InputGroup>
+        
+        <InputGroup>
+          <Label htmlFor="password">Mot de passe</Label>
+          <PasswordContainer>
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Votre mot de passe"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                setError(null)
+              }}
+              required
+            />
+            <ToggleButton 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            >
+              {showPassword ? "👁️" : "🔒"}
+            </ToggleButton>
+          </PasswordContainer>
+        </InputGroup>
+        
         {error && <ErrorMessage>{error}</ErrorMessage>}
+        
         <Button type="submit" disabled={loading}>
           {loading ? "Connexion en cours..." : "Se connecter"}
         </Button>
       </Form>
+      
       <Links>
         <Link href="/register">Créer un compte</Link>
         <Link href="/forgot-password">Mot de passe oublié ?</Link>
       </Links>
-    </div>
+    </PageContainer>
   )
 }

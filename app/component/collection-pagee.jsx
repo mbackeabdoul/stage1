@@ -1,122 +1,190 @@
-"use client"
-import { useState, useEffect } from "react"
-import styled from "styled-components"
-import Image from "next/image"
-import { ChevronDown, Plus } from "lucide-react"
+"use client";
+import { useState, useEffect } from "react";
+import styled from "styled-components";
+import Image from "next/image";
+import { ChevronDown, Plus } from "lucide-react";
 
+// Main container with a subtle gradient
 const CollectionContainer = styled.section`
-  padding: 2rem;
-  background-color: #f9f9f9;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin: 2rem 0;
 
   @media (max-width: 600px) {
-    padding: 1rem;
+    padding: 1.5rem 1rem;
+    margin: 1rem 0;
   }
-`
+`;
 
+// Header with refined spacing
 const CollectionHeader = styled.div`
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 
   @media (max-width: 600px) {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
-`
+`;
 
+// Bold, modern title with hover animation
 const CollectionTitle = styled.h1`
-  font-size: 3.5rem;
+  font-size: 3.75rem;
   font-weight: 900;
   text-transform: uppercase;
-  line-height: 1;
+  line-height: 1.1;
   margin: 0;
-  
+  color: #1a1a1a;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #3a3af4;
+  }
+
   @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
+
+  @media (max-width: 480px) {
     font-size: 2rem;
   }
-`
+`;
 
+// Filter container with a clean border
 const FilterContainer = styled.div`
   display: flex;
   justify-content: space-between;
-  margin: 2rem 0;
-  border-bottom: 1px solid #eee;
+  align-items: center;
+  margin: 2.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e5e5;
 
   @media (max-width: 600px) {
     flex-direction: column;
-    gap: 15px;
+    gap: 1rem;
+    align-items: flex-start;
   }
-`
+`;
 
+// Category filters with smooth transitions
 const CategoryFilters = styled.div`
   display: flex;
-  gap: 2rem;
-`
+  gap: 2.5rem;
+`;
 
 const CategoryLink = styled.button`
   background: none;
   border: none;
-  font-size: 1rem;
+  font-size: 1.125rem;
+  font-weight: ${(props) => (props.active ? "600" : "400")};
+  color: ${(props) => (props.active ? "#3a3af4" : "#666")};
   cursor: pointer;
   padding: 0.5rem 0;
-  color: ${(props) => (props.active ? "#000" : "#999")};
-  font-weight: ${(props) => (props.active ? "500" : "400")};
-  
-  &:hover {
-    color: #000;
-  }
-`
+  transition: color 0.3s ease;
 
+  &:hover {
+    color: #3a3af4;
+  }
+`;
+
+// Sort filters with a modern layout
 const SortFilters = styled.div`
   display: flex;
   gap: 2rem;
-`
+  position: relative;
+`;
 
 const FilterButton = styled.button`
   background: none;
   border: none;
-  font-size: 1rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #666;
   cursor: pointer;
   display: flex;
   align-items: center;
-`
+  gap: 0.5rem;
+  transition: color 0.3s ease;
 
+  &:hover {
+    color: #3a3af4;
+  }
+`;
+
+// Dropdown with a sleek slide-in effect
 const SortDropdown = styled.div`
   display: ${(props) => (props.isOpen ? "flex" : "none")};
   flex-direction: column;
-  align-items: flex-end;
-`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.2s ease;
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
 
 const SortOption = styled.button`
   background: none;
   border: none;
   font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0.15rem 0;
-  text-align: right;
   color: #666;
-  
-  &:hover {
-    color: #000;
-  }
-`
+  cursor: pointer;
+  padding: 0.25rem 1rem;
+  text-align: right;
+  transition: color 0.3s ease;
 
+  &:hover {
+    color: #3a3af4;
+  }
+`;
+
+// Responsive product grid
 const ProductGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2.5rem;
-  
+
   @media (max-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
   }
-  
+
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
-`
+`;
 
+// Product card with hover effect
 const ProductCard = styled.div`
   display: flex;
   flex-direction: column;
-`
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+// Image container with consistent sizing
 const ProductImageContainer = styled.div`
   position: relative;
   width: 100%;
@@ -125,63 +193,83 @@ const ProductImageContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 0.5rem;
-`
+  margin-bottom: 0.75rem;
+`;
 
+// Add button with a circular design
 const AddButton = styled.button`
   position: absolute;
-  bottom: 1rem;
+  bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
-  background: none;
+  background-color: #3a3af4;
   border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
-  color: #333;
+  color: #ffffff;
   display: flex;
   justify-content: center;
   align-items: center;
-`
+  transition: background-color 0.3s ease;
 
+  &:hover {
+    background-color: #1a1af4;
+  }
+`;
+
+// Product info with clean padding
 const ProductInfo = styled.div`
-  padding: 0.5rem 0;
-`
+  padding: 1rem;
+`;
 
+// Subtle category text
 const ProductCategory = styled.div`
   font-size: 0.875rem;
   color: #666;
-`
+  text-transform: uppercase;
+`;
 
+// Bold product name
 const ProductName = styled.h3`
-  font-size: 1rem;
-  font-weight: 500;
-  margin: 0.25rem 0;
-`
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: #1a1a1a;
+`;
 
+// Price with a standout color
 const ProductPrice = styled.div`
-  font-size: 1rem;
-  font-weight: 500;
-`
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #3a3af4;
+`;
 
+// Color options with a sleek look
 const ColorOptions = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-`
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+`;
 
 const ColorVariant = styled.div`
   font-size: 0.75rem;
-  color: #999;
+  color: #666;
   background-color: #f0f0f0;
-  padding: 0.1rem 0.3rem;
-`
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+`;
 
+// Load more container with centered alignment
 const LoadMoreContainer = styled.div`
   display: flex;
   justify-content: center;
-  margin-top: 3rem;
-`
+  margin-top: 3.5rem;
+`;
 
+// Stylish load more button
 const LoadMoreButton = styled.button`
   background: none;
   border: none;
@@ -190,174 +278,122 @@ const LoadMoreButton = styled.button`
   align-items: center;
   cursor: pointer;
   color: #666;
-  
-  &:hover {
-    color: #000;
-  }
-`
+  font-size: 1.125rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
 
+  &:hover {
+    color: #3a3af4;
+  }
+`;
+
+// Flex containers for alignment
 const Disposition = styled.div`
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
-`
+`;
 
 const Disposition1 = styled.div`
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: space-between;
-`
+  align-items: center;
+`;
 
+// Enhanced loading spinner
 const LoadingSpinner = styled.div`
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #333;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3a3af4;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   animation: spin 1s linear infinite;
-  margin: 0 auto;
-  
+  margin: 2rem auto;
+
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
-`
+`;
 
-// Categories - you can adjust these based on your actual categories
-const categories = ["ALL", "Men", "Women", "KID"]
-
-// Sort options
-const sortOptions = ["Less to more", "More to Less"]
+// Categories and sort options
+const categories = ["ALL", "Men", "Women", "KID"];
+const sortOptions = ["Less to more", "More to Less"];
 
 export default function CollectionPage() {
-  // State for products
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-
-  // State for filters
-  const [activeCategory, setActiveCategory] = useState("ALL")
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
-  const [activeSort, setActiveSort] = useState("")
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("ALL");
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [activeSort, setActiveSort] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Fetch products from API
   const fetchProducts = async (pageNum = 1, reset = false) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      // Fetch all products from the API
-      const response = await fetch("http://localhost:5000/api/products")
+      const response = await fetch("http://localhost:5000/api/products");
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
+      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`)
-      }
+      let filteredProducts = [...data];
 
-      const data = await response.json()
-
-      // Filter and sort products on the client side
-      let filteredProducts = [...data]
-
-      // Apply category filter if not "ALL"
+      // Apply category filter
       if (activeCategory !== "ALL") {
-        const categoryMap = {
-          Men: "Homme",
-          Women: "Femme",
-          KID: "Enfant",
-        }
-
-        const apiCategory = categoryMap[activeCategory]
-        if (apiCategory) {
-          filteredProducts = filteredProducts.filter((p) => p.genre === apiCategory)
-        }
+        const categoryMap = { Men: "Homme", Women: "Femme", KID: "Enfant" };
+        const apiCategory = categoryMap[activeCategory];
+        if (apiCategory) filteredProducts = filteredProducts.filter((p) => p.genre === apiCategory);
       }
 
       // Apply sorting
-      if (activeSort === "Less to more") {
-        filteredProducts.sort((a, b) => a.price - b.price)
-      } else if (activeSort === "More to Less") {
-        filteredProducts.sort((a, b) => b.price - a.price)
-      }
+      if (activeSort === "Less to more") filteredProducts.sort((a, b) => a.price - b.price);
+      else if (activeSort === "More to Less") filteredProducts.sort((a, b) => b.price - a.price);
 
-      // Apply pagination
-      const limit = 6 // Number of products per page
-      const startIndex = (pageNum - 1) * limit
-      const endIndex = startIndex + limit
-      const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
+      // Pagination
+      const limit = 6;
+      const startIndex = (pageNum - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
-      // Check if there are more products
-      const moreAvailable = endIndex < filteredProducts.length
-
-      setHasMore(moreAvailable)
-
-      // Update products state
-      if (reset) {
-        setProducts(paginatedProducts)
-      } else {
-        setProducts((prev) => [...prev, ...paginatedProducts])
-      }
+      setHasMore(endIndex < filteredProducts.length);
+      setProducts((prev) => (reset ? paginatedProducts : [...prev, ...paginatedProducts]));
     } catch (error) {
-      console.error("Error fetching products:", error)
-      // Handle error state here if needed
+      console.error("Error fetching products:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  // Initial load
+  // Initial load and filter updates
   useEffect(() => {
-    fetchProducts(1, true)
-  }, [activeCategory, activeSort])
+    fetchProducts(1, true);
+  }, [activeCategory, activeSort]);
 
-  // Handle load more
-  const handleLoadMore = () => {
-    if (!loading && hasMore) {
-      const nextPage = page + 1
-      setPage(nextPage)
-      fetchProducts(nextPage)
-    }
-  }
-
-  // Handle category change
+  // Handlers
+  const handleLoadMore = () => !loading && hasMore && setPage((prev) => prev + 1) && fetchProducts(page + 1);
   const handleCategoryChange = (category) => {
     if (category !== activeCategory) {
-      setActiveCategory(category)
-      setPage(1)
+      setActiveCategory(category);
+      setPage(1);
     }
-  }
-
-  // Handle sort change
+  };
   const handleSortChange = (sort) => {
-    setActiveSort(sort)
-    setSortDropdownOpen(false)
-    setPage(1)
-  }
-
-  // Toggle sort dropdown
-  const toggleSortDropdown = () => {
-    setSortDropdownOpen(!sortDropdownOpen)
-  }
-
-  // Toggle filters
-  const toggleFilters = () => {
-    setFiltersOpen(!filtersOpen)
-  }
-
-  // Add to cart function - implement your cart logic here
-  const addToCart = (productId) => {
-    console.log(`Adding product ${productId} to cart`)
-    // Call your cart API or update local state
-  }
+    setActiveSort(sort);
+    setSortDropdownOpen(false);
+    setPage(1);
+  };
+  const toggleSortDropdown = () => setSortDropdownOpen((prev) => !prev);
+  const toggleFilters = () => setFiltersOpen((prev) => !prev);
+  const addToCart = (productId) => console.log(`Adding product ${productId} to cart`);
 
   return (
     <CollectionContainer>
       <CollectionHeader>
         <CollectionTitle>
-          XIV
-          <br />
-          COLLECTIONS
-          <br />
-          23-24
+          XIV <br /> COLLECTIONS <br /> 23-24
         </CollectionTitle>
       </CollectionHeader>
 
@@ -375,9 +411,13 @@ export default function CollectionPage() {
         </CategoryFilters>
 
         <SortFilters>
-          <FilterButton onClick={toggleFilters}>Filters({filtersOpen ? "-" : "+"})</FilterButton>
+          <FilterButton onClick={toggleFilters}>
+            Filters ({filtersOpen ? "-" : "+"})
+          </FilterButton>
           <div>
-            <FilterButton onClick={toggleSortDropdown}>Sorts({sortDropdownOpen ? "-" : "+"})</FilterButton>
+            <FilterButton onClick={toggleSortDropdown}>
+              Sorts ({sortDropdownOpen ? "-" : "+"})
+            </FilterButton>
             <SortDropdown isOpen={sortDropdownOpen}>
               {sortOptions.map((option) => (
                 <SortOption key={option} onClick={() => handleSortChange(option)}>
@@ -414,7 +454,6 @@ export default function CollectionPage() {
                   </ColorOptions>
                 )}
               </Disposition>
-
               <Disposition1>
                 <ProductName>{product.name}</ProductName>
                 <ProductPrice>${product.price}</ProductPrice>
@@ -435,6 +474,5 @@ export default function CollectionPage() {
         </LoadMoreContainer>
       )}
     </CollectionContainer>
-  )
+  );
 }
-

@@ -1,142 +1,188 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import styled from "styled-components"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { FiArrowLeft, FiArrowRight, FiCheckCircle } from "react-icons/fi"
+"use client";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation"; // Ajout de useSearchParams
+import styled from "styled-components";
+import { FiArrowRight, FiCheckCircle } from "react-icons/fi";
 
 export default function Checkout() {
-  const router = useRouter()
-  const [cartItems, setCartItems] = useState([])
-  const [activeTab, setActiveTab] = useState("INFORMATION")
-  const [orderComplete, setOrderComplete] = useState(false)
+  const router = useRouter();
+  const searchParams = useSearchParams(); // Pour récupérer les paramètres d'URL
+  const [cartItems, setCartItems] = useState([]);
+  const [activeTab, setActiveTab] = useState("INFORMATION");
+  const [orderComplete, setOrderComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [contactInfo, setContactInfo] = useState({
     email: "",
     phone: "",
     firstName: "",
     lastName: "",
     country: "",
-    state: "",
     address: "",
     city: "",
     postalCode: "",
-  })
-  const [shippingMethod, setShippingMethod] = useState("")
-  const [shippingCost, setShippingCost] = useState(10)
+  });
+  const [shippingMethod, setShippingMethod] = useState("");
+  const [shippingCost, setShippingCost] = useState(10);
+  const [paymentMethod, setPaymentMethod] = useState("payDunya");
+  const [mobilePaymentOption, setMobilePaymentOption] = useState("");
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
-    // Check if user is logged in
-    const user = sessionStorage.getItem("user")
-    const token = sessionStorage.getItem("token")
+    const loadCartItemById = () => {
+      try {
+        // Récupérer l'ID du produit depuis les paramètres d'URL
+        const productId = searchParams.get("productId");
+        console.log("ID du produit cliqué récupéré depuis l'URL :", productId);
 
-    if (!user || !token) {
-      router.push("/login?callbackUrl=/checkout")
-      return
-    }
-
-    // Load cart items from local storage
-    try {
-      const cartData = localStorage.getItem("cartItems")
-      if (cartData) {
-        const parsedCart = JSON.parse(cartData)
-        if (Array.isArray(parsedCart) && parsedCart.length > 0) {
-          setCartItems(parsedCart)
-        } else {
-          // Redirect to cart if no items
-          router.push("/chariot")
+        if (!productId) {
+          console.log("Aucun productId trouvé dans l'URL, redirection vers /shopping-bag");
+          router.push("/shopping-bag");
+          return;
         }
-      } else {
-        // Redirect to cart if no items
-        router.push("/chariot")
+
+        // Vérifier si cartItems existe dans localStorage
+        const storedCart = localStorage.getItem("cartItems");
+        let existingCart = storedCart ? JSON.parse(storedCart) : [];
+
+        // Si le panier est vide ou n'est pas un tableau, initialiser avec le nouvel élément
+        if (!Array.isArray(existingCart)) {
+          existingCart = [];
+        }
+
+        // Vérifier si l'élément avec cet ID existe déjà dans le panier
+        const itemExists = existingCart.find((item) => item.id === productId);
+        if (!itemExists) {
+          // Simuler l'ajout d'un produit avec cet ID (vous devriez normalement récupérer les détails via une API)
+          const newItem = { id: productId, name: `Produit ${productId}`, price: 50, quantity: 1, image: "/placeholder.jpg" }; // Exemple
+          existingCart.push(newItem);
+          localStorage.setItem("cartItems", JSON.stringify(existingCart));
+          console.log("Nouvel élément ajouté au panier :", newItem);
+        }
+
+        // Ne garder que l'élément avec l'ID cliqué pour cet affichage
+        const selectedItem = existingCart.find((item) => item.id === productId);
+        if (!selectedItem) {
+          console.log("Produit non trouvé dans le panier, redirection vers /shopping-bag");
+          router.push("/shopping-bag");
+          return;
+        }
+
+        setCartItems([selectedItem]); // On ne garde que cet élément dans cartItems
+        console.log("Élément sélectionné pour le checkout :", selectedItem);
+      } catch (error) {
+        console.error("Erreur lors du chargement de l'élément du panier :", error);
+        setPaymentError("Erreur lors de la récupération de votre produit");
+        router.push("/shopping-bag");
       }
-    } catch (error) {
-      console.error("Error loading cart data:", error)
-      // Create demo items if error occurs (for development only)
-      setCartItems([
-        {
-          id: "1",
-          name: "Basic Heavy T-Shirt",
-          color: "Black",
-          size: "L",
-          price: 99,
-          quantity: 1,
-          image: "/images/image1.png",
-        },
-        {
-          id: "2",
-          name: "Basic Fit T-Shirt",
-          color: "Black",
-          size: "L",
-          price: 99,
-          quantity: 1,
-          image: "/images/image1.png",
-        },
-      ])
+    };
+
+    loadCartItemById();
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      // Mettre à jour uniquement l'élément actuel dans localStorage si nécessaire
+      const storedCart = JSON.parse(localStorage.getItem("cartItems")) || [];
+      const updatedCart = storedCart.map((item) =>
+        item.id === cartItems[0].id ? cartItems[0] : item
+      );
+      localStorage.setItem("cartItems", JSON.stringify(updatedCart));
+      console.log("CartItems mis à jour dans localStorage :", updatedCart);
     }
-  }, [router])
+  }, [cartItems]);
+
+  useEffect(() => {
+    localStorage.setItem("contactInfo", JSON.stringify(contactInfo));
+    console.log("ContactInfo sauvegardé dans localStorage :", contactInfo);
+  }, [contactInfo]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setContactInfo({
-      ...contactInfo,
-      [name]: value,
-    })
-  }
+    const { name, value } = e.target;
+    setContactInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validateContactInfo = () =>
+    ["email", "firstName", "lastName", "address", "city", "country", "postalCode"].every(
+      (field) => contactInfo[field].trim() !== ""
+    );
 
   const handleContinueToShipping = () => {
     if (!validateContactInfo()) {
-      alert("Please fill in all required fields")
-      return
+      alert("Veuillez remplir tous les champs obligatoires");
+      return;
     }
-    setActiveTab("SHIPPING")
-  }
+    setActiveTab("SHIPPING");
+  };
 
   const handleContinueToPayment = () => {
     if (!shippingMethod) {
-      alert("Please select a shipping method")
-      return
+      alert("Veuillez sélectionner une méthode de livraison");
+      return;
     }
-    setActiveTab("PAYMENT")
-  }
+    setActiveTab("PAYMENT");
+  };
 
-  const handleBackToInformation = () => {
-    setActiveTab("INFORMATION")
-  }
+  const handleConfirmOrder = async () => {
+    try {
+      if (!mobilePaymentOption) {
+        setPaymentError("Veuillez sélectionner une option de paiement mobile (ex. Orange Money ou Wave)");
+        return;
+      }
+      if (!contactInfo.phone || contactInfo.phone.trim() === "") {
+        setPaymentError("Veuillez entrer un numéro de téléphone valide");
+        return;
+      }
+      if (!cartItems || cartItems.length === 0) {
+        setPaymentError("Votre panier est vide");
+        return;
+      }
 
-  const handleBackToShipping = () => {
-    setActiveTab("SHIPPING")
-  }
+      setIsLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  const handleCompleteOrder = () => {
-    // Process order completion
-    setOrderComplete(true)
+      const simulatedResponse = { success: true, redirect_url: "https://paydunya.com/checkout/success", token: "simulated-token-123" };
 
-    // Clear cart
-    localStorage.removeItem("cartItems")
+      if (simulatedResponse.success) {
+        const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        localStorage.setItem(
+          "lastOrder",
+          JSON.stringify({
+            orderNumber,
+            cartItems,
+            contactInfo,
+            shippingMethod,
+            shippingCost,
+            paymentMethod,
+            total: calculateTotal(),
+            status: "pending",
+            token: simulatedResponse.token,
+          })
+        );
 
-    // Redirect to confirmation page after a delay
-    setTimeout(() => {
-      router.push("/chariot")
-    }, 3000)
-  }
+        setOrderComplete(true);
+        setIsLoading(false);
+        setTimeout(() => router.push("/shopping-bag"), 2000);
+      } else {
+        throw new Error("Échec simulé du paiement");
+      }
+    } catch (error) {
+      setPaymentError(error.message || "Une erreur est survenue lors du traitement du paiement");
+      setIsLoading(false);
+    }
+  };
 
-  const validateContactInfo = () => {
-    const required = ["email", "firstName", "lastName", "address", "city", "country", "postalCode"]
-    return required.every((field) => contactInfo[field].trim() !== "")
-  }
+  const calculateSubtotal = () => cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const calculateTotal = () => calculateSubtotal() + shippingCost;
 
-  const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
-
-  const calculateTotal = () => {
-    return calculateSubtotal() + shippingCost
-  }
-
-  const handleSelectShipping = (method, cost) => {
-    setShippingMethod(method)
-    setShippingCost(cost)
+  if (isLoading) {
+    return (
+      <Container>
+        <LoaderContainer>
+          <Loader />
+          <LoadingText>Traitement de votre paiement...</LoadingText>
+        </LoaderContainer>
+      </Container>
+    );
   }
 
   if (orderComplete) {
@@ -144,574 +190,551 @@ export default function Checkout() {
       <Container>
         <OrderConfirmation>
           <FiCheckCircle size={64} color="#28a745" />
-          <h2>Order Placed Successfully!</h2>
-          <p>Thank you for your purchase. Your order is being processed.</p>
-          <p>Redirecting to confirmation page...</p>
+          <h2>Paiement effectué avec succès!</h2>
+          <p>Redirection vers votre panier pour ajuster les quantités...</p>
         </OrderConfirmation>
       </Container>
-    )
+    );
   }
 
   return (
     <Container>
-      <BackButton onClick={() => router.push("/chariot")}>
-        <FiArrowLeft size={20} />
-      </BackButton>
-
-      <CheckoutTitle>CHECKOUT</CheckoutTitle>
-
       <CheckoutTabs>
-        <CheckoutTab
-          active={activeTab === "INFORMATION"}
-          onClick={() => setActiveTab("INFORMATION")}
-          completed={activeTab === "SHIPPING" || activeTab === "PAYMENT"}
-        >
-          INFORMATION
-        </CheckoutTab>
-        <CheckoutTab
-          active={activeTab === "SHIPPING"}
-          onClick={() => (activeTab === "PAYMENT" ? setActiveTab("SHIPPING") : null)}
-          disabled={activeTab === "INFORMATION"}
-          completed={activeTab === "PAYMENT"}
-        >
-          SHIPPING
-        </CheckoutTab>
-        <CheckoutTab
-          active={activeTab === "PAYMENT"}
-          disabled={activeTab === "INFORMATION" || activeTab === "SHIPPING"}
-        >
-          PAYMENT
-        </CheckoutTab>
+        <CheckoutTab active={activeTab === "INFORMATION"}>INFORMATION</CheckoutTab>
+        <CheckoutTab active={activeTab === "SHIPPING"}>LIVRAISON</CheckoutTab>
+        <CheckoutTab active={activeTab === "PAYMENT"}>PAIEMENT</CheckoutTab>
       </CheckoutTabs>
 
       <CheckoutContent>
-        <CheckoutForm>
-          {activeTab === "INFORMATION" && (
-            <>
-              <FormSection>
-                <FormSectionTitle>CONTACT INFO</FormSectionTitle>
-                <FormInput
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  value={contactInfo.email}
-                  onChange={handleInputChange}
-                  required
-                />
-                <FormInput
-                  type="tel"
-                  name="phone"
-                  placeholder="Phone"
-                  value={contactInfo.phone}
-                  onChange={handleInputChange}
-                />
-              </FormSection>
+        {activeTab === "INFORMATION" && (
+          <CheckoutForm>
+            <FormSection>
+              <FormInput
+                name="email"
+                placeholder="Email"
+                value={contactInfo.email}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                name="phone"
+                placeholder="Téléphone"
+                value={contactInfo.phone}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                name="firstName"
+                placeholder="Prénom"
+                value={contactInfo.firstName}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                name="lastName"
+                placeholder="Nom"
+                value={contactInfo.lastName}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                name="address"
+                placeholder="Adresse"
+                value={contactInfo.address}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                name="city"
+                placeholder="Ville"
+                value={contactInfo.city}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                name="postalCode"
+                placeholder="Code postal"
+                value={contactInfo.postalCode}
+                onChange={handleInputChange}
+                required
+              />
+              <FormSelect name="country" value={contactInfo.country} onChange={handleInputChange} required>
+                <option value="">Pays</option>
+                <option value="SN">Sénégal</option>
+              </FormSelect>
+            </FormSection>
+            <ContinueButton onClick={handleContinueToShipping}>
+              Continuer vers la livraison <FiArrowRight />
+            </ContinueButton>
+          </CheckoutForm>
+        )}
 
-              <FormSection>
-                <FormSectionTitle>SHIPPING ADDRESS</FormSectionTitle>
-                <FormRow>
-                  <FormInput
-                    type="text"
-                    name="firstName"
-                    placeholder="First Name"
-                    value={contactInfo.firstName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <FormInput
-                    type="text"
-                    name="lastName"
-                    placeholder="Last Name"
-                    value={contactInfo.lastName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </FormRow>
-                <FormSelect name="country" value={contactInfo.country} onChange={handleInputChange} required>
-                  <option value="">Country</option>
-                  <option value="SN">Senegal</option>
-                  <option value="US">United States</option>
-                  <option value="CA">Canada</option>
-                  <option value="UK">United Kingdom</option>
-                </FormSelect>
-                <FormInput
-                  type="text"
-                  name="state"
-                  placeholder="State / Region"
-                  value={contactInfo.state}
-                  onChange={handleInputChange}
-                />
-                <FormInput
-                  type="text"
-                  name="address"
-                  placeholder="Address"
-                  value={contactInfo.address}
-                  onChange={handleInputChange}
-                  required
-                />
-                <FormRow>
-                  <FormInput
-                    type="text"
-                    name="city"
-                    placeholder="City"
-                    value={contactInfo.city}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <FormInput
-                    type="text"
-                    name="postalCode"
-                    placeholder="Postal Code"
-                    value={contactInfo.postalCode}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </FormRow>
-              </FormSection>
-
-              <ContinueButton onClick={handleContinueToShipping}>
-                Continue to Shipping
-                <FiArrowRight size={18} />
+        {activeTab === "SHIPPING" && (
+          <CheckoutForm>
+            <FormSection>
+              <ShippingOption
+                selected={shippingMethod === "standard"}
+                onClick={() => {
+                  setShippingMethod("standard");
+                  setShippingCost(10);
+                }}
+              >
+                Livraison standard - $10
+              </ShippingOption>
+              <ShippingOption
+                selected={shippingMethod === "express"}
+                onClick={() => {
+                  setShippingMethod("express");
+                  setShippingCost(20);
+                }}
+              >
+                Livraison express - $20
+              </ShippingOption>
+            </FormSection>
+            <ButtonGroup>
+              <BackButton onClick={() => setActiveTab("INFORMATION")}>Retour</BackButton>
+              <ContinueButton onClick={handleContinueToPayment}>
+                Continuer vers le paiement <FiArrowRight />
               </ContinueButton>
-            </>
-          )}
+            </ButtonGroup>
+          </CheckoutForm>
+        )}
 
-          {activeTab === "SHIPPING" && (
-            <ShippingSection>
-              <FormSection>
-                <FormSectionTitle>SHIPPING METHOD</FormSectionTitle>
-                <ShippingOptions>
-                  <ShippingOption
-                    selected={shippingMethod === "standard"}
-                    onClick={() => handleSelectShipping("standard", 10)}
+        {activeTab === "PAYMENT" && (
+          <CheckoutForm>
+            <FormSection>
+              <PaymentOption>
+                <input
+                  type="radio"
+                  id="payDunya"
+                  checked={paymentMethod === "payDunya"}
+                  onChange={() => setPaymentMethod("payDunya")}
+                />
+                <label htmlFor="payDunya">Paiement mobile (PayDunya)</label>
+              </PaymentOption>
+              {paymentMethod === "payDunya" && (
+                <MobilePaymentOptions>
+                  <MobilePaymentOption
+                    selected={mobilePaymentOption === "orangeMoney"}
+                    onClick={() => setMobilePaymentOption("orangeMoney")}
                   >
-                    <ShippingOptionDetails>
-                      <ShippingOptionName>Standard Shipping</ShippingOptionName>
-                      <ShippingOptionDescription>3-5 business days</ShippingOptionDescription>
-                    </ShippingOptionDetails>
-                    <ShippingOptionPrice>$10.00</ShippingOptionPrice>
-                  </ShippingOption>
-
-                  <ShippingOption
-                    selected={shippingMethod === "express"}
-                    onClick={() => handleSelectShipping("express", 20)}
+                    Orange Money
+                  </MobilePaymentOption>
+                  <MobilePaymentOption
+                    selected={mobilePaymentOption === "wave"}
+                    onClick={() => setMobilePaymentOption("wave")}
                   >
-                    <ShippingOptionDetails>
-                      <ShippingOptionName>Express Shipping</ShippingOptionName>
-                      <ShippingOptionDescription>1-2 business days</ShippingOptionDescription>
-                    </ShippingOptionDetails>
-                    <ShippingOptionPrice>$20.00</ShippingOptionPrice>
-                  </ShippingOption>
-                </ShippingOptions>
-              </FormSection>
-
-              <ButtonGroup>
-                <BackButton onClick={handleBackToInformation}>
-                  <FiArrowLeft size={18} /> Back
-                </BackButton>
-                <ContinueButton onClick={handleContinueToPayment}>
-                  Continue to Payment
-                  <FiArrowRight size={18} />
-                </ContinueButton>
-              </ButtonGroup>
-            </ShippingSection>
-          )}
-
-          {activeTab === "PAYMENT" && (
-            <PaymentSection>
-              <FormSection>
-                <FormSectionTitle>PAYMENT METHOD</FormSectionTitle>
-                <PaymentOptions>
-                  <PaymentOption selected={true}>
-                    <PaymentOptionDetails>
-                      <PaymentOptionName>Credit Card</PaymentOptionName>
-                    </PaymentOptionDetails>
-                  </PaymentOption>
-                </PaymentOptions>
-
-                <FormInput type="text" placeholder="Card Number" required />
-
-                <FormRow>
-                  <FormInput type="text" placeholder="MM/YY" required />
-                  <FormInput type="text" placeholder="CVC" required />
-                </FormRow>
-
-                <FormInput type="text" placeholder="Name on Card" required />
-              </FormSection>
-
-              <ButtonGroup>
-                <BackButton onClick={handleBackToShipping}>
-                  <FiArrowLeft size={18} /> Back
-                </BackButton>
-                <ContinueButton onClick={handleCompleteOrder}>
-                  Complete Order
-                  <FiArrowRight size={18} />
-                </ContinueButton>
-              </ButtonGroup>
-            </PaymentSection>
-          )}
-        </CheckoutForm>
+                    Wave
+                  </MobilePaymentOption>
+                  {paymentError && <ErrorMessage>{paymentError}</ErrorMessage>}
+                  <MobilePaymentInstructions>
+                    Simulation : Vous serez redirigé après la confirmation.
+                  </MobilePaymentInstructions>
+                </MobilePaymentOptions>
+              )}
+            </FormSection>
+            <ButtonGroup>
+              <BackButton onClick={() => setActiveTab("SHIPPING")}>Retour</BackButton>
+              <ContinueButton onClick={handleConfirmOrder}>
+                Confirmer <FiArrowRight />
+              </ContinueButton>
+            </ButtonGroup>
+          </CheckoutForm>
+        )}
 
         <OrderSummary>
-          <OrderSummaryTitle>YOUR ORDER</OrderSummaryTitle>
-          <OrderItems>
-            {cartItems.map((item, index) => (
-              <OrderItem key={index}>
-                <OrderItemImage>
-                  <Image
-                    src={item.image || "/placeholder.svg"}
-                    alt={item.name}
-                    width={60}
-                    height={60}
-                    style={{ width: "60px", height: "60px", objectFit: "cover" }}
-                  />
-                </OrderItemImage>
-                <OrderItemDetails>
-                  <OrderItemName>{item.name}</OrderItemName>
-                  <OrderItemVariant>
-                    {item.color}/{item.size}
-                  </OrderItemVariant>
-                </OrderItemDetails>
-                <OrderItemQuantity>({item.quantity})</OrderItemQuantity>
-                <OrderItemPrice>${item.price}</OrderItemPrice>
-              </OrderItem>
-            ))}
-          </OrderItems>
-
-          <OrderSummaryDivider />
-
-          <OrderTotals>
-            <OrderTotal>
-              <OrderTotalLabel>Subtotal</OrderTotalLabel>
-              <OrderTotalValue>${calculateSubtotal().toFixed(2)}</OrderTotalValue>
-            </OrderTotal>
-            <OrderTotal>
-              <OrderTotalLabel>Shipping</OrderTotalLabel>
-              <OrderTotalValue>
-                {shippingMethod ? `$${shippingCost.toFixed(2)}` : "Calculated at next step"}
-              </OrderTotalValue>
-            </OrderTotal>
-          </OrderTotals>
-
-          <OrderSummaryDivider />
-
+          <OrderSummaryTitle>VOTRE COMMANDE</OrderSummaryTitle>
+          {cartItems.map((item) => (
+            <OrderItem key={item.id}>
+              <ItemImage src={item.image || "/placeholder.jpg"} alt={item.name} />
+              <OrderItemDetails>
+                <OrderItemName>{item.name}</OrderItemName>
+                <OrderItemSubtext>ID: {item.id}</OrderItemSubtext>
+                <OrderItemPrice>${item.price} x {item.quantity}</OrderItemPrice>
+              </OrderItemDetails>
+            </OrderItem>
+          ))}
           <OrderTotal>
             <OrderTotalLabel>Total</OrderTotalLabel>
-            <OrderTotalValue>${calculateTotal().toFixed(2)}</OrderTotalValue>
+            <OrderTotalValue>${calculateTotal()}</OrderTotalValue>
           </OrderTotal>
         </OrderSummary>
       </CheckoutContent>
     </Container>
-  )
+  );
 }
 
-// Styled Components
+// Styled Components (inchangés sauf si nécessaire pour la cohérence)
 const Container = styled.div`
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  font-family: 'Inter', sans-serif;
-`
+  margin: 20px auto;
+  padding: 20px;
 
-const BackButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 0;
-`
-
-const CheckoutTitle = styled.h1`
-  font-size: 28px;
-  font-weight: 600;
-  margin-bottom: 30px;
-`
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
+`;
 
 const CheckoutTabs = styled.div`
   display: flex;
-  border-bottom: 1px solid #eaeaea;
-  margin-bottom: 30px;
-`
+  gap: 20px;
+  margin-bottom: 20px;
 
-const CheckoutTab = styled.button`
-  padding: 15px 20px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid ${(props) => {
-    if (props.active) return "#000"
-    if (props.completed) return "#28a745"
-    return "transparent"
-  }};
-  cursor: ${(props) => (props.disabled ? "default" : "pointer")};
-  font-size: 14px;
-  font-weight: ${(props) => (props.active || props.completed ? "500" : "400")};
-  color: ${(props) => {
-    if (props.active) return "#000"
-    if (props.completed) return "#28a745"
-    if (props.disabled) return "#aaa"
-    return "#666"
-  }};
-  opacity: ${(props) => (props.disabled ? 0.7 : 1)};
-  
-  &:hover {
-    color: ${(props) => (props.disabled ? null : "#000")};
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 10px;
   }
-`
+`;
+
+const CheckoutTab = styled.div`
+  font-weight: ${(props) => (props.active ? "bold" : "normal")};
+  font-size: 1rem;
+  color: ${(props) => (props.active ? "#3a3af4" : "#666")};
+  cursor: pointer;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #3a3af4;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.875rem;
+  }
+`;
 
 const CheckoutContent = styled.div`
   display: flex;
-  gap: 40px;
-  
+  gap: 20px;
+
   @media (max-width: 768px) {
     flex-direction: column;
+    gap: 15px;
   }
-`
+`;
 
 const CheckoutForm = styled.div`
-  flex: 3;
-`
+  flex: 2;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
 
 const FormSection = styled.div`
-  margin-bottom: 30px;
-`
-
-const FormSectionTitle = styled.h2`
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 15px;
-`
+  margin-bottom: 20px;
+`;
 
 const FormInput = styled.input`
   width: 100%;
   padding: 12px;
+  margin-bottom: 10px;
   border: 1px solid #ddd;
-  margin-bottom: 15px;
-  font-size: 14px;
-  
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+
   &:focus {
+    border-color: #3a3af4;
     outline: none;
-    border-color: #999;
   }
-`
+
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 0.875rem;
+  }
+`;
 
 const FormSelect = styled.select`
   width: 100%;
   padding: 12px;
+  margin-bottom: 10px;
   border: 1px solid #ddd;
-  margin-bottom: 15px;
-  font-size: 14px;
-  background-color: white;
-  
-  &:focus {
-    outline: none;
-    border-color: #999;
-  }
-`
+  border-radius: 4px;
+  font-size: 1rem;
 
-const FormRow = styled.div`
-  display: flex;
-  gap: 15px;
-  
-  ${FormInput} {
-    flex: 1;
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 0.875rem;
   }
-`
+`;
 
 const ContinueButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 15px;
-  background-color: #000;
-  border: none;
-  font-size: 14px;
+  padding: 12px 20px;
+  background: #3a3af4;
   color: white;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
-  
-  &:hover {
-    background-color: #333;
-  }
-`
-
-const ShippingSection = styled.div``
-
-const ShippingOptions = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-bottom: 30px;
-`
-
-const ShippingOption = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  border: 1px solid ${(props) => (props.selected ? "#000" : "#ddd")};
-  background-color: ${(props) => (props.selected ? "#f5f5f5" : "white")};
-  cursor: pointer;
-  
+  gap: 5px;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+
   &:hover {
-    border-color: #999;
+    background: #1a1af4;
   }
-`
 
-const ShippingOptionDetails = styled.div``
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.875rem;
+  }
+`;
 
-const ShippingOptionName = styled.div`
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 5px;
-`
+const BackButton = styled.button`
+  padding: 12px 20px;
+  border: 1px solid #ddd;
+  background: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 1rem;
 
-const ShippingOptionDescription = styled.div`
-  font-size: 12px;
-  color: #666;
-`
-
-const ShippingOptionPrice = styled.div`
-  font-size: 14px;
-  font-weight: 500;
-`
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 0.875rem;
+  }
+`;
 
 const ButtonGroup = styled.div`
   display: flex;
-  justify-content: space-between;
-`
+  gap: 10px;
 
-const PaymentSection = styled.div``
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+  }
+`;
 
-const PaymentOptions = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-bottom: 30px;
-`
+const ShippingOption = styled.div`
+  padding: 12px;
+  border: 1px solid ${(props) => (props.selected ? "#3a3af4" : "#ddd")};
+  margin-bottom: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  background-color: ${(props) => (props.selected ? "#f5f5ff" : "transparent")};
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #3a3af4;
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 0.875rem;
+  }
+`;
 
 const PaymentOption = styled.div`
+  margin-bottom: 10px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  border: 1px solid ${(props) => (props.selected ? "#000" : "#ddd")};
-  background-color: ${(props) => (props.selected ? "#f5f5f5" : "white")};
+  gap: 8px;
+`;
+
+const MobilePaymentOptions = styled.div`
+  margin-left: 20px;
+`;
+
+const MobilePaymentOption = styled.div`
+  padding: 12px;
+  border: 1px solid ${(props) => (props.selected ? "#3a3af4" : "#ddd")};
+  margin-bottom: 10px;
   cursor: pointer;
-  
+  border-radius: 4px;
+  background-color: ${(props) => (props.selected ? "#f5f5ff" : "transparent")};
+  transition: all 0.3s ease;
+
   &:hover {
-    border-color: #999;
+    border-color: #3a3af4;
   }
-`
 
-const PaymentOptionDetails = styled.div``
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 0.875rem;
+  }
+`;
 
-const PaymentOptionName = styled.div`
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 5px;
-`
+const MobilePaymentInstructions = styled.p`
+  font-size: 12px;
+  color: #666;
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  margin: 10px 0;
+  font-size: 0.875rem;
+`;
 
 const OrderSummary = styled.div`
-  flex: 2;
-  background-color: #f9f9f9;
+  flex: 1;
+  border: 1px solid #ddd;
   padding: 20px;
-`
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    padding: 15px;
+  }
+`;
 
 const OrderSummaryTitle = styled.h2`
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 20px;
-`
+  font-size: 1.125rem;
+  margin-bottom: 15px;
+  color: #1a1a1a;
+  text-transform: uppercase;
 
-const OrderItems = styled.div`
-  margin-bottom: 20px;
-`
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+`;
 
 const OrderItem = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 15px;
-`
+  padding: 10px;
+  background: #fafafa;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-const OrderItemImage = styled.div`
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 8px;
+  }
+`;
+
+const ItemImage = styled.img`
   width: 60px;
   height: 60px;
+  object-fit: cover;
   margin-right: 15px;
-  flex-shrink: 0;
-`
+  border-radius: 4px;
+
+  @media (max-width: 768px) {
+    width: 50px;
+    height: 50px;
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+`;
 
 const OrderItemDetails = styled.div`
-  flex-grow: 1;
-`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
 
 const OrderItemName = styled.div`
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 5px;
-`
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
 
-const OrderItemVariant = styled.div`
-  font-size: 12px;
+  @media (max-width: 768px) {
+    font-size: 0.875rem;
+  }
+`;
+
+const OrderItemSubtext = styled.div`
+  font-size: 0.875rem;
   color: #666;
-`
 
-const OrderItemQuantity = styled.div`
-  font-size: 14px;
-  margin-right: 10px;
-`
+  @media (max-width: 768px) {
+    font-size: 0.75rem;
+  }
+`;
 
 const OrderItemPrice = styled.div`
-  font-size: 14px;
-  margin-right: 10px;
-`
+  font-size: 1rem;
+  font-weight: 500;
+  color: #3a3af4;
 
-const OrderSummaryDivider = styled.hr`
-  border: none;
-  border-top: 1px solid #eaeaea;
-  margin: 15px 0;
-`
-
-const OrderTotals = styled.div`
-  margin-bottom: 15px;
-`
+  @media (max-width: 768px) {
+    font-size: 0.875rem;
+    margin-top: 4px;
+  }
+`;
 
 const OrderTotal = styled.div`
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
-  
-  &:last-child {
-    font-weight: 500;
-    font-size: 16px;
+  font-weight: bold;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+
+  @media (max-width: 768px) {
+    font-size: 0.875rem;
   }
-`
+`;
 
 const OrderTotalLabel = styled.div`
-  font-size: 14px;
-`
+  font-size: 1rem;
+
+  @media (max-width: 768px) {
+    font-size: 0.875rem;
+  }
+`;
 
 const OrderTotalValue = styled.div`
-  font-size: 14px;
-`
+  font-size: 1rem;
+  color: #3a3af4;
+
+  @media (max-width: 768px) {
+    font-size: 0.875rem;
+  }
+`;
 
 const OrderConfirmation = styled.div`
+  text-align: center;
+  padding: 50px;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+`;
+
+const LoaderContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  height: 50vh;
-  
-  h2 {
-    margin: 20px 0;
-    font-size: 24px;
-  }
-  
-  p {
-    margin: 5px 0;
-    font-size: 16px;
-    color: #666;
-  }
-`
+  height: 100vh;
+`;
 
+const Loader = styled.div`
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3a3af4;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.p`
+  margin-top: 10px;
+  font-size: 16px;
+  color: #333;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+`;
