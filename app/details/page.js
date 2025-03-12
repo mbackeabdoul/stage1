@@ -39,7 +39,7 @@ export default function ProductDetail() {
 
     const fetchProductData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/products/${id}`, {
+        const response = await fetch(`https://projets1-back-3.onrender.com/api/products/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -72,7 +72,7 @@ export default function ProductDetail() {
         if (!user || !token) return;
         const userId = JSON.parse(user)._id;
         const response = await fetch(
-          `http://localhost:5000/api/favorites/check?productId=${id}&userId=${userId}`,
+          `https://projets1-back-3.onrender.com/api/favorites/check?productId=${id}&userId=${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (response.ok) {
@@ -103,8 +103,8 @@ export default function ProductDetail() {
 
       const method = isFavorite ? "DELETE" : "POST";
       const url = isFavorite
-        ? `http://localhost:5000/api/favorites/remove/${id}`
-        : "http://localhost:5000/api/favorites/add";
+        ? `https://projets1-back-3.onrender.com/api/favorites/remove/${id}`
+        : "https://projets1-back-3.onrender.com/api/favorites/add";
 
       const response = await fetch(url, {
         method,

@@ -216,7 +216,7 @@ export default function Listefavoris() {
       }
 
       const userId = JSON.parse(user)._id;
-      const response = await fetch(`http://localhost:5000/api/favorites?userId=${userId}`, {
+      const response = await fetch(`https://projets1-back-3.onrender.com/api/favorites?userId=${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

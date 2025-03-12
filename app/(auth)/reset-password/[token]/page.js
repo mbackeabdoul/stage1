@@ -270,7 +270,7 @@ export default function ResetPasswordPage({ params }) {
     setIsLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/reset-password', {
+      const response = await axios.post('https://projets1-back-3.onrender.com/api/auth/reset-password', {
         token: resetToken,
         newPassword: password
       })

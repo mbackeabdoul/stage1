@@ -13,7 +13,7 @@ export default function NewProducts() {
       try {
         setIsLoading(true);
         const token = sessionStorage.getItem("token");
-        const response = await fetch("http://localhost:5000/api/products?sort=latest", {
+        const response = await fetch("https://projets1-back-3.onrender.com/api/products?sort=latest", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) throw new Error("Échec de la récupération des derniers produits");

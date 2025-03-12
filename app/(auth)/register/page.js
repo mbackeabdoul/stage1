@@ -87,7 +87,7 @@ export default function RegisterPage() {
     }
 
     try {
-      await axios.post("http://localhost:5000/api/auth/register", { name, email, password })
+      await axios.post("https://projets1-back-3.onrender.com/api/auth/register", { name, email, password })
       router.push("/login?success=registration")
     } catch (err) {
       if (err.response) {

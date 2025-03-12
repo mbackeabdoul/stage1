@@ -368,7 +368,7 @@ export default function Header() {
     const fetchLatestProducts = async () => {
       try {
         const token = sessionStorage.getItem("token");
-        const response = await fetch("http://localhost:5000/api/products?sort=latest&limit=5", {
+        const response = await fetch("https://projets1-back-3.onrender.com/api/products?sort=latest&limit=5", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

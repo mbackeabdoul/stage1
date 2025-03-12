@@ -335,7 +335,7 @@ export default function CollectionPage() {
   const fetchProducts = async (pageNum = 1, reset = false) => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/products");
+      const response = await fetch("https://projets1-back-3.onrender.com/api/products");
       if (!response.ok) throw new Error(`Error: ${response.status}`);
       const data = await response.json();
 

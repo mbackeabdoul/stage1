@@ -279,7 +279,7 @@ const AddProductForm = () => {
       const cleanToken = token ? token.replace(/^"|"$/g, "") : null
 
       // Send the request with the proper headers
-      const response = await axios.post("http://localhost:5000/api/products", productData, {
+      const response = await axios.post("https://projets1-back-3.onrender.com/api/products", productData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${cleanToken}`,
