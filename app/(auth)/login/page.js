@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import styled from "styled-components"
@@ -60,6 +60,14 @@ const PageTitle = styled.h2`
 `
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto py-10">Chargement...</div>}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState(null)
@@ -103,7 +111,7 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Error loading cart data:", error)
     }
-  }, [])
+  }, [router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -215,4 +223,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
