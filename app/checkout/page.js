@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation"; // Ajout de useSearchParams
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import styled from "styled-components";
 import { FiArrowRight, FiCheckCircle } from "react-icons/fi";
 
-export default function Checkout() {
+// Rename the functional component to CheckoutInner to avoid conflict
+function CheckoutInner() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // Pour récupérer les paramètres d'URL
+  const searchParams = useSearchParams();
   const [cartItems, setCartItems] = useState([]);
   const [activeTab, setActiveTab] = useState("INFORMATION");
   const [orderComplete, setOrderComplete] = useState(false);
@@ -30,7 +32,6 @@ export default function Checkout() {
   useEffect(() => {
     const loadCartItemById = () => {
       try {
-        // Récupérer l'ID du produit depuis les paramètres d'URL
         const productId = searchParams.get("productId");
         console.log("ID du produit cliqué récupéré depuis l'URL :", productId);
 
@@ -40,26 +41,21 @@ export default function Checkout() {
           return;
         }
 
-        // Vérifier si cartItems existe dans localStorage
         const storedCart = localStorage.getItem("cartItems");
         let existingCart = storedCart ? JSON.parse(storedCart) : [];
 
-        // Si le panier est vide ou n'est pas un tableau, initialiser avec le nouvel élément
         if (!Array.isArray(existingCart)) {
           existingCart = [];
         }
 
-        // Vérifier si l'élément avec cet ID existe déjà dans le panier
         const itemExists = existingCart.find((item) => item.id === productId);
         if (!itemExists) {
-          // Simuler l'ajout d'un produit avec cet ID (vous devriez normalement récupérer les détails via une API)
-          const newItem = { id: productId, name: `Produit ${productId}`, price: 50, quantity: 1, image: "/placeholder.jpg" }; // Exemple
+          const newItem = { id: productId, name: `Produit ${productId}`, price: 50, quantity: 1, image: "/placeholder.jpg" };
           existingCart.push(newItem);
           localStorage.setItem("cartItems", JSON.stringify(existingCart));
           console.log("Nouvel élément ajouté au panier :", newItem);
         }
 
-        // Ne garder que l'élément avec l'ID cliqué pour cet affichage
         const selectedItem = existingCart.find((item) => item.id === productId);
         if (!selectedItem) {
           console.log("Produit non trouvé dans le panier, redirection vers /shopping-bag");
@@ -67,7 +63,7 @@ export default function Checkout() {
           return;
         }
 
-        setCartItems([selectedItem]); // On ne garde que cet élément dans cartItems
+        setCartItems([selectedItem]);
         console.log("Élément sélectionné pour le checkout :", selectedItem);
       } catch (error) {
         console.error("Erreur lors du chargement de l'élément du panier :", error);
@@ -81,7 +77,6 @@ export default function Checkout() {
 
   useEffect(() => {
     if (cartItems.length > 0) {
-      // Mettre à jour uniquement l'élément actuel dans localStorage si nécessaire
       const storedCart = JSON.parse(localStorage.getItem("cartItems")) || [];
       const updatedCart = storedCart.map((item) =>
         item.id === cartItems[0].id ? cartItems[0] : item
@@ -364,7 +359,23 @@ export default function Checkout() {
   );
 }
 
-// Styled Components (inchangés sauf si nécessaire pour la cohérence)
+// Main Checkout component with Suspense
+export default function Checkout() {
+  return (
+    <Suspense fallback={
+      <Container>
+        <LoaderContainer>
+          <Loader />
+          <LoadingText>Chargement du checkout...</LoadingText>
+        </LoaderContainer>
+      </Container>
+    }>
+      <CheckoutInner /> {/* Use the renamed component here */}
+    </Suspense>
+  );
+}
+
+// Styled Components (unchanged)
 const Container = styled.div`
   max-width: 1200px;
   margin: 20px auto;

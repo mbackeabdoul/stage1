@@ -172,7 +172,7 @@ export default function ShoppingBag() {
               checked={agreedToTerms}
               onChange={() => setAgreedToTerms(!agreedToTerms)}
             />
-            <label htmlFor="terms">J’accepte les termes et conditions</label>
+            <label htmlFor="terms">J\'accepte les termes et conditions</label>
           </TermsCheckbox>
           {lastOrder?.status === 'pending' ? (
             <ContinueButton onClick={handleFinalValidation}>VALIDER LA COMMANDE</ContinueButton>

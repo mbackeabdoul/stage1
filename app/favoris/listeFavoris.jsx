@@ -4,9 +4,11 @@ import styled from "styled-components";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation"; // Import corrigé
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { Suspense } from "react"; // Import Suspense
 
+// Styled components (unchanged, kept for completeness)
 const SectionContainer = styled.section`
   padding: 2rem;
   background-color: #f9f9f9;
@@ -197,11 +199,12 @@ const EmptyMessage = styled.p`
   padding: 2rem;
 `;
 
-export default function Listefavoris() {
+// Inner component with useSearchParams
+function FavorisContent() {
   const [favorites, setFavorites] = useState([]);
-  const [loading, setLoading] = useState(false); // Pas de chargement initial
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams(); // Maintenant correctement importé
+  const searchParams = useSearchParams();
   const showFavorites = searchParams.get("show") === "true";
 
   const fetchFavorites = async () => {
@@ -244,7 +247,7 @@ export default function Listefavoris() {
 
   useEffect(() => {
     if (showFavorites) {
-      fetchFavorites(); // Récupérer uniquement si ?show=true
+      fetchFavorites();
     }
   }, [showFavorites]);
 
@@ -341,8 +344,22 @@ export default function Listefavoris() {
           </ProductSlider>
         )
       ) : (
-        <EmptyMessage>Cliquez sur l'icône Favoris ci page details bi pour voir vos favoris.</EmptyMessage>
+        <EmptyMessage>Cliquez sur l\'icône Favoris ci page details bi pour voir vos favoris.</EmptyMessage>
       )}
     </SectionContainer>
+  );
+}
+
+// Main export with Suspense
+export default function Listefavoris() {
+  return (
+    <Suspense fallback={
+      <LoadingContainer>
+        <LoadingSpinner />
+        <LoadingText>Chargement de vos favoris...</LoadingText>
+      </LoadingContainer>
+    }>
+      <FavorisContent />
+    </Suspense>
   );
 }
